@@ -3,7 +3,8 @@ import {
   CustomerStatusBadge,
   formatLastContactDate,
 } from "@/components/customers/shared"
-import type { Customer } from "@/lib/customers/types"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Customer } from "@/lib/types"
 
 export function CustomerCard({ customer }: { customer: Customer }) {
   return (
@@ -23,8 +24,7 @@ export function CustomerCard({ customer }: { customer: Customer }) {
       </div>
       <div className="flex items-center justify-between border-t pt-3">
         <span className="text-xs text-muted-foreground">
-          Last contact{" "}
-          {formatLastContactDate(customer.lastContactDate)}
+          Last contact {formatLastContactDate(customer.lastContactDate)}
         </span>
         <CustomerRowActions />
       </div>
@@ -32,12 +32,46 @@ export function CustomerCard({ customer }: { customer: Customer }) {
   )
 }
 
-export function CustomerCards({ customers }: { customers: Customer[] }) {
+/**
+ * Mobile (<=md) presentation of the customer list with its own
+ * loading/error/empty states, mirroring the desktop table section.
+ */
+export function CustomerCardsSection({
+  isLoading,
+  isError,
+  error,
+  customers,
+}: {
+  isLoading: boolean
+  isError: boolean
+  error: Error | null
+  customers?: Customer[]
+}) {
   return (
     <div className="flex flex-col gap-3">
-      {customers.map((customer) => (
-        <CustomerCard key={customer.id} customer={customer} />
-      ))}
+      {/* Fewer skeleton cards than table rows: keeps mobile scroll sane */}
+      {isLoading &&
+        Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={`card-skeleton-${i}`} className="h-28 rounded-lg" />
+        ))}
+
+      {isError && (
+        <div className="rounded-lg border p-8 text-center text-sm text-destructive">
+          Failed to load customers: {error?.message}
+        </div>
+      )}
+
+      {!isLoading && !isError && (customers?.length ?? 0) === 0 && (
+        <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+          No customers found
+        </div>
+      )}
+
+      {!isLoading &&
+        !isError &&
+        customers?.map((customer) => (
+          <CustomerCard key={customer.id} customer={customer} />
+        ))}
     </div>
   )
 }
