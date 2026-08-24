@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppSidebar } from "@/components/app-sidebar";
+import { HeaderBreadcrumb } from "@/components/header-breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                   orientation="vertical"
                   className="mr-2 data-vertical:h-4 data-vertical:self-auto"
                 />
+                <HeaderBreadcrumb />
               </div>
             </header>
             {children}
