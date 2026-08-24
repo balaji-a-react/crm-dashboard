@@ -79,7 +79,7 @@ export function CustomerForm({
         control={form.control}
         name="phone"
         label="Phone"
-        placeholder="+1 (555) 000-0000"
+        placeholder="+91 9876543210"
       />
 
       <FormInputField

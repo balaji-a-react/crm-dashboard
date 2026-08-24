@@ -63,7 +63,10 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  // Base UI defaults this to true (native-select-like: the selected item is
+  // rendered over the trigger, so the popup overlaps it). We default to false
+  // so the popup anchors below the trigger like a classic dropdown.
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<

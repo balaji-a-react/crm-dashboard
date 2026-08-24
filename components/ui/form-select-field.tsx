@@ -43,8 +43,14 @@ export function FormSelectField<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <Field className="gap-1.5">
           <FieldLabel>{label}</FieldLabel>
-          {/* Base UI Select is controlled; bridge it to RHF manually */}
-          <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+          {/* Base UI Select is controlled; bridge it to RHF manually.
+              Passing `items` makes SelectValue render the option label
+              (e.g. "Active") instead of the raw stored value ("active"). */}
+          <Select
+            value={field.value}
+            onValueChange={(v) => field.onChange(v)}
+            items={options}
+          >
             <SelectTrigger
               className="w-full"
               aria-invalid={fieldState.invalid || undefined}
