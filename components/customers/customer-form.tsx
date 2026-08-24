@@ -1,21 +1,13 @@
 "use client"
 
-import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2Icon } from "lucide-react"
-import { Controller, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { FormInputField } from "@/components/ui/form-input-field"
+import { FormSelectField } from "@/components/ui/form-select-field"
+import { FormTextareaField } from "@/components/ui/form-textarea-field"
 import {
   customerFormSchema,
   type CustomerFormValues,
@@ -36,7 +28,8 @@ export interface CustomerFormProps {
  *
  * Note: this registry uses the `Field` primitives (Field/FieldLabel/
  * FieldError) rather than a classic `Form` wrapper -- each field is bound
- * through react-hook-form's `Controller`.
+ * through react-hook-form's `Controller`, encapsulated in the shared
+ * `form-*-field` primitives in `components/ui`.
  */
 export function CustomerForm({
   defaultValues,
@@ -60,112 +53,66 @@ export function CustomerForm({
 
   return (
     // Container-query grid: two columns when the HOST has room (the wide
-    // Add dialog), single column in narrow hosts (the edit sheet) -- because
+    // Add/Edit dialog), single column in narrow hosts -- because
     // the breakpoint tracks the form's container, not the viewport.
     <form
       onSubmit={form.handleSubmit(onSubmit)}
       noValidate // let zod messages drive validation UX instead of the browser
-      className="@container grid grid-cols-1 gap-4 @lg:grid-cols-2"
+      className="@container grid grid-cols-1 gap-x-3 gap-y-2 @lg:grid-cols-2"
     >
-      <Controller
+      <FormInputField
         control={form.control}
         name="name"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid || undefined}>
-            <FieldLabel htmlFor="customer-name">Name</FieldLabel>
-            <Input id="customer-name" placeholder="Jane Doe" {...field} />
-            {fieldState.error && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
+        label="Name"
+        placeholder="Jane Doe"
       />
 
-      <Controller
+      <FormInputField
         control={form.control}
         name="email"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid || undefined}>
-            <FieldLabel htmlFor="customer-email">Email</FieldLabel>
-            <Input
-              id="customer-email"
-              type="email"
-              placeholder="jane@company.com"
-              {...field}
-            />
-            {fieldState.error && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
+        label="Email"
+        type="email"
+        placeholder="jane@company.com"
       />
 
-      <Controller
+      <FormInputField
         control={form.control}
         name="phone"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid || undefined}>
-            <FieldLabel htmlFor="customer-phone">Phone</FieldLabel>
-            <Input id="customer-phone" placeholder="+1 (555) 000-0000" {...field} />
-            {fieldState.error && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
+        label="Phone"
+        placeholder="+1 (555) 000-0000"
       />
 
-      <Controller
+      <FormInputField
         control={form.control}
         name="company"
-        render={({ field }) => (
-          <Field>
-            <FieldLabel htmlFor="customer-company">Company</FieldLabel>
-            <Input id="customer-company" placeholder="Acme Corp" {...field} />
-          </Field>
-        )}
+        label="Company"
+        placeholder="Acme Corp"
       />
 
-      <Controller
+      <FormSelectField
         control={form.control}
         name="status"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid || undefined}>
-            <FieldLabel>Status</FieldLabel>
-            {/* Base UI Select is controlled; bridge it to RHF manually */}
-            <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {fieldState.error && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
+        label="Status"
+        options={[
+          { label: "Active", value: "active" },
+          { label: "Inactive", value: "inactive" },
+        ]}
       />
 
-      <Controller
+      <FormInputField
         control={form.control}
         name="lastContactDate"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid || undefined}>
-            <FieldLabel htmlFor="customer-last-contact">Last contact date</FieldLabel>
-            <Input id="customer-last-contact" type="date" {...field} />
-            {fieldState.error && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
+        label="Last contact date"
+        type="date"
       />
 
-      <Controller
+      <FormTextareaField
         control={form.control}
         name="notes"
-        render={({ field }) => (
-          <Field className="@lg:col-span-2">
-            <FieldLabel htmlFor="customer-notes">Notes</FieldLabel>
-            <Textarea
-              id="customer-notes"
-              rows={3}
-              placeholder="Anything worth remembering…"
-              {...field}
-            />
-          </Field>
-        )}
+        label="Notes"
+        rows={3}
+        placeholder="Anything worth remembering…"
+        className="@lg:col-span-2"
       />
 
       <Button type="submit" disabled={isSubmitting} className="@lg:col-span-2">

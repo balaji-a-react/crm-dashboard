@@ -9,6 +9,7 @@ import {
   CustomerTableSection,
 } from "@/components/customers/customer-table"
 import { CustomerDetailSheet } from "@/components/customers/customer-detail-sheet"
+import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -205,24 +206,35 @@ export default function CustomersPage() {
         WHY THESE ARE RENDERED ONCE AT PAGE LEVEL
         -----------------------------------------
         The table has up to `pageSize` rows and the card list similar. If each
-        row/card mounted its own Sheet/AlertDialog, we'd instantiate dozens of
-        portal'd overlay components at once for overlays that are visually
-        singletons anyway. One controlled instance driven by the shared hook
-        is lighter and guarantees consistent behavior across both views.
-
-        The `key` remounts the sheet per (customer, mode) so its internal
-        useState(initialMode) re-initializes on every open and resets to
-        view mode after closing -- without setState-in-effect hacks.
+        row/card mounted its own Sheet/Dialog/AlertDialog, we'd instantiate
+        dozens of portal'd overlay components at once for overlays that are
+        visually singletons anyway. One controlled instance driven by the
+        shared hook is lighter and guarantees consistent behavior across both
+        views (desktop table + mobile cards).
       */}
       <CustomerDetailSheet
-        key={`${rowActions.selectedCustomerId ?? "none"}-${rowActions.sheetMode}`}
+        key={rowActions.selectedCustomerId ?? "none"}
         customerId={rowActions.selectedCustomerId}
         open={rowActions.detailSheetOpen}
-        initialMode={rowActions.sheetMode}
         onOpenChange={(next) => {
           if (!next) rowActions.closeSheet()
         }}
+        onEditRequest={(id) => {
+          // Edit uses the shared dialog (same modal as Add), so the sheet
+          // steps aside to avoid stacking two overlays.
+          rowActions.closeSheet()
+          rowActions.openEdit(id)
+        }}
         onDeleteRequest={rowActions.requestDelete}
+      />
+
+      {/* Shared edit modal: same Dialog + CustomerForm as Add, prefilled */}
+      <EditCustomerDialog
+        customerId={rowActions.editCustomerId}
+        open={rowActions.editDialogOpen}
+        onOpenChange={(next) => {
+          if (!next) rowActions.closeEdit()
+        }}
       />
 
       {/* Single delete confirmation for every trigger in either view */}

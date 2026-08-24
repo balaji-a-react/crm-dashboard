@@ -10,8 +10,8 @@ import { useDeleteCustomer } from "@/hooks/use-customers"
  *
  * The customer list renders the SAME data twice (table on desktop, cards on
  * mobile). Without a shared hook, each view would own its own copies of
- * "open sheet", "which mode", and "what is pending deletion" -- and they
- * WILL drift apart (e.g. table opens view mode, cards open edit mode).
+ * "open detail", "which customer is being edited", and "what is pending
+ * deletion" -- and they WILL drift apart.
  *
  * This hook is the single source of truth for that behavior: both views get
  * identical callbacks, so a click on a table row and a click on a card are
@@ -24,7 +24,12 @@ export function useCustomerRowActions() {
     string | null
   >(null)
   const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
-  const [sheetMode, setSheetMode] = React.useState<"view" | "edit">("view")
+
+  // Which customer the shared edit dialog shows (same modal as Add).
+  const [editCustomerId, setEditCustomerId] = React.useState<string | null>(
+    null
+  )
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
 
   // Id pending delete confirmation -- non-null renders the shared AlertDialog.
   const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null)
@@ -33,18 +38,20 @@ export function useCustomerRowActions() {
 
   function openDetail(id: string) {
     setSelectedCustomerId(id)
-    setSheetMode("view")
     setDetailSheetOpen(true)
   }
 
   function openEdit(id: string) {
-    setSelectedCustomerId(id)
-    setSheetMode("edit")
-    setDetailSheetOpen(true)
+    setEditCustomerId(id)
+    setEditDialogOpen(true)
   }
 
   function closeSheet() {
     setDetailSheetOpen(false)
+  }
+
+  function closeEdit() {
+    setEditDialogOpen(false)
   }
 
   function requestDelete(id: string) {
@@ -61,10 +68,13 @@ export function useCustomerRowActions() {
     deleteMutation.mutate(deleteTarget, {
       onSuccess: () => {
         toast.success("Customer deleted")
-        // If the deleted record was open in the sheet, close it too --
-        // otherwise the user would be staring at stale data.
+        // If the deleted record was open in the sheet or edit dialog, close
+        // it too -- otherwise the user would be staring at stale data.
         if (deleteTarget === selectedCustomerId) {
           setDetailSheetOpen(false)
+        }
+        if (deleteTarget === editCustomerId) {
+          setEditDialogOpen(false)
         }
         setDeleteTarget(null)
       },
@@ -75,10 +85,12 @@ export function useCustomerRowActions() {
   return {
     selectedCustomerId,
     detailSheetOpen,
-    sheetMode,
     openDetail,
-    openEdit,
     closeSheet,
+    editCustomerId,
+    editDialogOpen,
+    openEdit,
+    closeEdit,
     /** Id pending confirmation; drives the page-level AlertDialog `open`. */
     deleteTarget,
     requestDelete,
