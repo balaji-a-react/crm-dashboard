@@ -1,4 +1,4 @@
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react"
+import { PencilIcon, Trash2Icon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,21 +22,43 @@ export function formatLastContactDate(isoDate: string): string {
   }).format(new Date(isoDate))
 }
 
-export function CustomerRowActions() {
+/**
+ * Shared edit/delete icon pair used by BOTH table rows and cards.
+ * Buttons stop propagation so they don't trigger the parent row/card's
+ * "open detail" click.
+ */
+export function CustomerRowActions({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void
+  onDelete: () => void
+}) {
   return (
     <div className="flex items-center gap-1">
-      {/* Presentational only -- wired to dialogs in a later step */}
-      <Button variant="ghost" size="icon" title="Edit">
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Edit"
+        onClick={(e) => {
+          e.stopPropagation()
+          onEdit()
+        }}
+      >
         <PencilIcon />
         <span className="sr-only">Edit</span>
       </Button>
-      <Button variant="ghost" size="icon" title="Delete">
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Delete"
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete()
+        }}
+      >
         <Trash2Icon />
         <span className="sr-only">Delete</span>
-      </Button>
-      <Button variant="ghost" size="icon" title="More">
-        <MoreHorizontalIcon />
-        <span className="sr-only">More</span>
       </Button>
     </div>
   )

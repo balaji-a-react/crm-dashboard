@@ -3,10 +3,32 @@
 import * as React from "react"
 import { SearchIcon } from "lucide-react"
 
+import { AddCustomerDialog } from "@/components/customers/add-customer-dialog"
 import { CustomerCardsSection } from "@/components/customers/customer-card"
-import { CustomerTableSection } from "@/components/customers/customer-table"
+import {
+  CustomerTableSection,
+} from "@/components/customers/customer-table"
+import { CustomerDetailSheet } from "@/components/customers/customer-detail-sheet"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useCustomerRowActions } from "@/hooks/use-customer-row-actions"
 import { useCustomers } from "@/hooks/use-customers"
 import type { CustomerListParams } from "@/lib/types"
 
@@ -22,8 +44,6 @@ export default function CustomersPage() {
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
 
   // Debounce raw input into `search` so we don't hit the API per keystroke.
-  // setState runs inside the timeout callback (async), not synchronously
-  // in the effect body.
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
@@ -41,7 +61,17 @@ export default function CustomersPage() {
     pageSize,
   });
 
-  // Shared view state handed to both the desktop table and mobile cards
+  // --- Shared row/card actions (ONE instance for both views) ----------------
+  const rowActions = useCustomerRowActions();
+
+  // Same three callbacks go to table AND cards so their behavior can never
+  // diverge -- only the trigger elements differ.
+  const viewActions = {
+    onOpenDetail: rowActions.openDetail,
+    onOpenEdit: rowActions.openEdit,
+    onDeleteRequest: rowActions.requestDelete,
+  };
+
   const sectionState = {
     isLoading,
     isError,
@@ -50,6 +80,12 @@ export default function CustomersPage() {
   };
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
+
+  // Name for the delete confirmation copy; falls back if the record isn't
+  // on the current page (possible when deleting from a detail opened earlier).
+  const deleteTargetName =
+    data?.data.find((c) => c.id === rowActions.deleteTarget)?.name ??
+    "this customer";
 
   /** Clicking a sortable header: first click sorts asc, second toggles desc. */
   function handleSort(field: SortField) {
@@ -73,11 +109,15 @@ export default function CustomersPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your customer relationships and contact history.
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your customer relationships and contact history.
+          </p>
+        </div>
+        {/* Visible in both layouts (table & cards) */}
+        <AddCustomerDialog />
       </div>
 
       {/* Toolbar: search + page size */}
@@ -93,20 +133,24 @@ export default function CustomersPage() {
         </div>
         <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
           Rows per page
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) => {
+              setPageSize(Number(value));
               setPage(1);
             }}
-            className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
           >
-            {[5, 10, 20].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-16">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[5, 10, 20].map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 
@@ -114,11 +158,12 @@ export default function CustomersPage() {
       <div className="hidden md:block">
         <CustomerTableSection
           {...sectionState}
+          actions={viewActions}
           sort={{ field: sortBy, order: sortOrder, onSort: handleSort }}
         />
       </div>
       <div className="md:hidden">
-        <CustomerCardsSection {...sectionState} />
+        <CustomerCardsSection {...sectionState} actions={viewActions} />
       </div>
 
       {/* Pagination: Previous / numbered pages / Next */}
@@ -155,6 +200,54 @@ export default function CustomersPage() {
           </Button>
         </div>
       </div>
+
+      {/*
+        WHY THESE ARE RENDERED ONCE AT PAGE LEVEL
+        -----------------------------------------
+        The table has up to `pageSize` rows and the card list similar. If each
+        row/card mounted its own Sheet/AlertDialog, we'd instantiate dozens of
+        portal'd overlay components at once for overlays that are visually
+        singletons anyway. One controlled instance driven by the shared hook
+        is lighter and guarantees consistent behavior across both views.
+
+        The `key` remounts the sheet per (customer, mode) so its internal
+        useState(initialMode) re-initializes on every open and resets to
+        view mode after closing -- without setState-in-effect hacks.
+      */}
+      <CustomerDetailSheet
+        key={`${rowActions.selectedCustomerId ?? "none"}-${rowActions.sheetMode}`}
+        customerId={rowActions.selectedCustomerId}
+        open={rowActions.detailSheetOpen}
+        initialMode={rowActions.sheetMode}
+        onOpenChange={(next) => {
+          if (!next) rowActions.closeSheet()
+        }}
+        onDeleteRequest={rowActions.requestDelete}
+      />
+
+      {/* Single delete confirmation for every trigger in either view */}
+      <AlertDialog
+        open={!!rowActions.deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) rowActions.cancelDelete()
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete customer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {deleteTargetName}. This cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={rowActions.confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -4,11 +4,32 @@ import {
   formatLastContactDate,
 } from "@/components/customers/shared"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { Customer } from "@/lib/types"
+import type {
+  Customer,
+} from "@/lib/types"
+import type { CustomerViewActions } from "@/components/customers/customer-table"
 
-export function CustomerCard({ customer }: { customer: Customer }) {
+export function CustomerCard({
+  customer,
+  actions,
+}: {
+  customer: Customer
+  actions: CustomerViewActions
+}) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
+    // Card click opens the detail sheet (view mode) -- same as table rows
+    <div
+      role="button"
+      tabIndex={0}
+      className="flex cursor-pointer flex-col gap-3 rounded-lg border p-4 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      onClick={() => actions.onOpenDetail(customer.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          actions.onOpenDetail(customer.id)
+        }
+      }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate font-medium">{customer.name}</p>
@@ -26,7 +47,12 @@ export function CustomerCard({ customer }: { customer: Customer }) {
         <span className="text-xs text-muted-foreground">
           Last contact {formatLastContactDate(customer.lastContactDate)}
         </span>
-        <CustomerRowActions />
+        {/* Buttons stopPropagation internally, so this won't re-trigger the
+            card's openDetail */}
+        <CustomerRowActions
+          onEdit={() => actions.onOpenEdit(customer.id)}
+          onDelete={() => actions.onDeleteRequest(customer.id)}
+        />
       </div>
     </div>
   )
@@ -41,11 +67,13 @@ export function CustomerCardsSection({
   isError,
   error,
   customers,
+  actions,
 }: {
   isLoading: boolean
   isError: boolean
   error: Error | null
   customers?: Customer[]
+  actions: CustomerViewActions
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -70,7 +98,7 @@ export function CustomerCardsSection({
       {!isLoading &&
         !isError &&
         customers?.map((customer) => (
-          <CustomerCard key={customer.id} customer={customer} />
+          <CustomerCard key={customer.id} customer={customer} actions={actions} />
         ))}
     </div>
   )

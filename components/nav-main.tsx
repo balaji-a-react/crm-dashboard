@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import {
   Collapsible,
@@ -32,6 +33,19 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const pathname = usePathname()
+
+  /**
+   * Route-derived active state:
+   * - root "/" must match exactly (everything starts with "/")
+   * - other items match their own path plus nested segments,
+   *   e.g. "/customers" stays active on "/customers/123"
+   */
+  function isItemActive(url: string): boolean {
+    if (url === "/") return pathname === "/"
+    return pathname === url || pathname.startsWith(`${url}/`)
+  }
+
   return (
     <SidebarGroup>
       <SidebarMenu>
@@ -66,7 +80,7 @@ export function NavMain({
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 tooltip={item.title}
-                isActive={item.isActive}
+                isActive={isItemActive(item.url)}
                 render={<Link href={item.url} />}
               >
                 {item.icon}

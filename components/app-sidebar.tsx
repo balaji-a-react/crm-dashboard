@@ -29,7 +29,6 @@ const data = {
       title: "Dashboard",
       url: "/",
       icon: <LayoutDashboardIcon />,
-      isActive: true,
     },
     {
       title: "Customers",

@@ -46,6 +46,13 @@ export interface CustomerSortState {
   onSort: (field: SortField) => void
 }
 
+/** Identical action callbacks for table and cards -- see useCustomerRowActions. */
+export interface CustomerViewActions {
+  onOpenDetail: (id: string) => void
+  onOpenEdit: (id: string) => void
+  onDeleteRequest: (id: string) => void
+}
+
 /**
  * Desktop (>md) presentation of the customer list, including its
  * loading/error/empty states so the page stays a thin composer.
@@ -56,7 +63,11 @@ export function CustomerTableSection({
   error,
   customers,
   sort,
-}: CustomerSectionState & { sort?: CustomerSortState }) {
+  actions,
+}: CustomerSectionState & {
+  sort?: CustomerSortState
+  actions: CustomerViewActions
+}) {
   return (
     <div className="rounded-lg border">
       <Table>
@@ -123,7 +134,12 @@ export function CustomerTableSection({
           {!isLoading &&
             !isError &&
             customers?.map((customer) => (
-              <TableRow key={customer.id}>
+              // Row click opens the detail sheet (view mode)
+              <TableRow
+                key={customer.id}
+                className="cursor-pointer"
+                onClick={() => actions.onOpenDetail(customer.id)}
+              >
                 <TableCell className="font-medium">{customer.name}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {customer.email}
@@ -140,7 +156,10 @@ export function CustomerTableSection({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end">
-                    <CustomerRowActions />
+                    <CustomerRowActions
+                      onEdit={() => actions.onOpenEdit(customer.id)}
+                      onDelete={() => actions.onDeleteRequest(customer.id)}
+                    />
                   </div>
                 </TableCell>
               </TableRow>
