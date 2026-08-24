@@ -19,7 +19,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   customers: "Customers",
 }
 
-function segmentLabel(segment: string, index: number): string {
+function segmentLabel(segment: string): string {
   if (SEGMENT_LABELS[segment]) {
     return SEGMENT_LABELS[segment]
   }
@@ -53,10 +53,10 @@ export function HeaderBreadcrumb() {
               />
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage>{segmentLabel(segment, index)}</BreadcrumbPage>
+                  <BreadcrumbPage>{segmentLabel(segment)}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink render={<Link href={href} />}>
-                    {segmentLabel(segment, index)}
+                    {segmentLabel(segment)}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
