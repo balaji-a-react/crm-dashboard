@@ -67,7 +67,8 @@ export function useCustomerRowActions() {
 
     deleteMutation.mutate(deleteTarget, {
       onSuccess: () => {
-        toast.success("Customer deleted")
+        // Deletions are destructive -- red toast (not green success).
+        toast.error("Customer deleted")
         // If the deleted record was open in the sheet or edit dialog, close
         // it too -- otherwise the user would be staring at stale data.
         if (deleteTarget === selectedCustomerId) {

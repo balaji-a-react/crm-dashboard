@@ -194,7 +194,7 @@ export default function CustomersPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[5, 25, 50].map((size) => (
+              {[10, 25, 50].map((size) => (
                 <SelectItem key={size} value={String(size)}>
                   {size}
                 </SelectItem>

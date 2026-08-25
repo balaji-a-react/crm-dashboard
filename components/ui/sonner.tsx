@@ -11,6 +11,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      // Required for sonner to consume the per-type --success/--error/
+      // --warning CSS vars below; without it every type renders "normal".
+      richColors
       icons={{
         success: (
           <CircleCheckIcon className="size-4" />
@@ -34,6 +37,26 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+
+          // Per-type theming: tinted bg, colored text/icon, accent border.
+          // Tokens live in globals.css so they flip with light/dark theme.
+          "--success-bg":
+            "color-mix(in oklab, var(--success) 10%, var(--popover))",
+          "--success-text": "var(--success-foreground)",
+          "--success-border":
+            "color-mix(in oklab, var(--success) 40%, var(--popover))",
+
+          "--error-bg":
+            "color-mix(in oklab, var(--destructive) 10%, var(--popover))",
+          "--error-text": "var(--destructive)",
+          "--error-border":
+            "color-mix(in oklab, var(--destructive) 40%, var(--popover))",
+
+          "--warning-bg":
+            "color-mix(in oklab, var(--warning) 14%, var(--popover))",
+          "--warning-text": "var(--warning-foreground)",
+          "--warning-border":
+            "color-mix(in oklab, var(--warning) 45%, var(--popover))",
         } as React.CSSProperties
       }
       toastOptions={{
