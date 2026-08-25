@@ -6,7 +6,6 @@ A customer management dashboard with search, advanced filtering, and full CRUD â
 
 **Repo:** https://github.com/balaji-a-react/crm-dashboard
 
-**Architecture doc:** https://drive.google.com/file/d/1Qb5JIH3QlWZFYYI03Izifu9YPRzgIR1B/view?usp=drive_link
 ---
 
 ## Tech Stack
