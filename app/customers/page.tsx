@@ -233,7 +233,11 @@ function CustomersPageContent() {
         />
       </div>
       <div className="md:hidden">
-        <CustomerCardsSection {...sectionState} actions={viewActions} />
+        <CustomerCardsSection
+          {...sectionState}
+          actions={viewActions}
+          sort={{ field: sortBy, order: sortOrder, onSort: handleSort }}
+        />
       </div>
 
       {/* Pagination: Previous / numbered pages / Next */}

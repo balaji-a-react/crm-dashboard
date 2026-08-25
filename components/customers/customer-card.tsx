@@ -1,13 +1,36 @@
 import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+} from "lucide-react"
+
+import {
   CustomerRowActions,
   CustomerStatusBadge,
   formatLastContactDate,
 } from "@/components/customers/shared"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import type {
   Customer,
 } from "@/lib/types"
-import type { CustomerViewActions } from "@/components/customers/customer-table"
+import type {
+  CustomerSortState,
+  CustomerViewActions,
+} from "@/components/customers/customer-table"
+
+/** Sortable fields mirror the API's sortBy union -- keep labels short for mobile. */
+const SORT_OPTIONS = [
+  { value: "name", label: "Name" },
+  { value: "email", label: "Email" },
+  { value: "lastContactDate", label: "Last Contact" },
+] satisfies { value: CustomerSortState["field"]; label: string }[]
 
 export function CustomerCard({
   customer,
@@ -61,22 +84,73 @@ export function CustomerCard({
 /**
  * Mobile (<=md) presentation of the customer list with its own
  * loading/error/empty states, mirroring the desktop table section.
+ * The table sorts via clickable headers; here a compact field select +
+ * direction toggle drive the SAME URL params, so both views stay in sync.
  */
 export function CustomerCardsSection({
   isLoading,
   isError,
   error,
   customers,
+  sort,
   actions,
 }: {
   isLoading: boolean
   isError: boolean
   error: Error | null
   customers?: Customer[]
+  sort?: CustomerSortState
   actions: CustomerViewActions
 }) {
   return (
     <div className="flex flex-col gap-3">
+      {/* Mobile sort bar: same sortBy/sortOrder state the table headers use.
+          onSort(field) sets asc on a new field; onSort(current) flips order. */}
+      {sort && (
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 text-sm text-muted-foreground">
+            Sort by
+          </span>
+          {/* items makes SelectValue show the label ("Name") instead of the
+              raw stored value ("name") -- same pattern as FormSelectField. */}
+          <Select
+            value={sort.field}
+            items={SORT_OPTIONS}
+            onValueChange={(value) => sort.onSort(value as CustomerSortState["field"])}
+          >
+            <SelectTrigger className="flex-1" aria-label="Sort customers by">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            title={
+              sort.order === "asc"
+                ? "Ascending -- tap for descending"
+                : "Descending -- tap for ascending"
+            }
+            onClick={() => sort.onSort(sort.field)}
+          >
+            {sort.order === "asc" ? (
+              <ArrowUpIcon />
+            ) : (
+              <ArrowDownIcon />
+            )}
+            <span className="sr-only">
+              Sort {sort.order === "asc" ? "ascending" : "descending"}
+            </span>
+          </Button>
+        </div>
+      )}
+
       {/* Fewer skeleton cards than table rows: keeps mobile scroll sane */}
       {isLoading &&
         Array.from({ length: 6 }).map((_, i) => (
