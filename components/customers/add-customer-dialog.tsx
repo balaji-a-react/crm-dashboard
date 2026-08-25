@@ -46,6 +46,7 @@ export function AddCustomerDialog({ ...props }: React.ComponentProps<"div">) {
             key={String(open)}
             submitLabel="Add Customer"
             isSubmitting={isPending}
+            onCancel={() => setOpen(false)}
             onSubmit={(values) =>
               // The API/store contract requires `company` as a string;
               // normalize the optional zod field before sending.

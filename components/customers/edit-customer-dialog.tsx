@@ -81,6 +81,7 @@ export function EditCustomerDialog({
             }}
             submitLabel="Save changes"
             isSubmitting={updateMutation.isPending}
+            onCancel={() => onOpenChange(false)}
             onSubmit={(values) =>
               customerId &&
               updateMutation.mutate(

@@ -18,6 +18,8 @@ interface FormTextareaFieldProps<T extends FieldValues> {
   label: string
   placeholder?: string
   rows?: number
+  /** Visual required marker on the label; validation itself lives in zod. */
+  required?: boolean
   /** Forwarded to the wrapping Field, e.g. grid span utilities. */
   className?: string
 }
@@ -32,6 +34,7 @@ export function FormTextareaField<T extends FieldValues>({
   label,
   placeholder,
   rows = 3,
+  required,
   className,
 }: FormTextareaFieldProps<T>) {
   const id = React.useId()
@@ -43,12 +46,20 @@ export function FormTextareaField<T extends FieldValues>({
       name={name}
       render={({ field, fieldState }) => (
         <Field className={cn("gap-1.5", className)}>
-          <FieldLabel htmlFor={id}>{label}</FieldLabel>
+          <FieldLabel htmlFor={id}>
+            {label}
+            {required && (
+              <span aria-hidden="true" className="text-destructive">
+                *
+              </span>
+            )}
+          </FieldLabel>
           <Textarea
             id={id}
             rows={rows}
             placeholder={placeholder}
             {...field}
+            aria-required={required || undefined}
             aria-invalid={fieldState.invalid || undefined}
             aria-describedby={fieldState.invalid ? errorId : undefined}
           />

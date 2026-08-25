@@ -5,6 +5,7 @@ import { Loader2Icon } from "lucide-react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
+import { DialogFooter } from "@/components/ui/dialog"
 import { FormInputField } from "@/components/ui/form-input-field"
 import { FormSelectField } from "@/components/ui/form-select-field"
 import { FormTextareaField } from "@/components/ui/form-textarea-field"
@@ -17,6 +18,8 @@ export interface CustomerFormProps {
   /** Pre-fill fields (used by the Edit flow); Add passes nothing. */
   defaultValues?: Partial<CustomerFormValues>
   onSubmit: (data: CustomerFormValues) => void
+  /** Renders a Cancel action in the footer (dialogs should offer one). */
+  onCancel?: () => void
   isSubmitting: boolean
   submitLabel: string
 }
@@ -34,6 +37,7 @@ export interface CustomerFormProps {
 export function CustomerForm({
   defaultValues,
   onSubmit,
+  onCancel,
   isSubmitting,
   submitLabel,
 }: CustomerFormProps) {
@@ -65,6 +69,7 @@ export function CustomerForm({
         name="name"
         label="Name"
         placeholder="Jane Doe"
+        required
       />
 
       <FormInputField
@@ -73,6 +78,7 @@ export function CustomerForm({
         label="Email"
         type="email"
         placeholder="jane@company.com"
+        required
       />
 
       <FormInputField
@@ -80,6 +86,7 @@ export function CustomerForm({
         name="phone"
         label="Phone"
         placeholder="+91 9876543210"
+        required
       />
 
       <FormInputField
@@ -104,6 +111,7 @@ export function CustomerForm({
         name="lastContactDate"
         label="Last contact date"
         type="date"
+        required
       />
 
       <FormTextareaField
@@ -115,10 +123,24 @@ export function CustomerForm({
         className="@lg:col-span-2"
       />
 
-      <Button type="submit" disabled={isSubmitting} className="@lg:col-span-2">
-        {isSubmitting && <Loader2Icon className="animate-spin" />}
-        {submitLabel}
-      </Button>
+      {/* Dialog convention: actions right-aligned in a footer, not a
+          full-width button. Lives inside <form> so submit still works. */}
+      <DialogFooter className="@lg:col-span-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        )}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2Icon className="animate-spin" />}
+          {submitLabel}
+        </Button>
+      </DialogFooter>
     </form>
   )
 }

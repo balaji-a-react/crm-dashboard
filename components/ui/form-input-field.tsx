@@ -17,6 +17,8 @@ interface FormInputFieldProps<T extends FieldValues> {
   label: string
   type?: string
   placeholder?: string
+  /** Visual required marker on the label; validation itself lives in zod. */
+  required?: boolean
 }
 
 /**
@@ -34,6 +36,7 @@ export function FormInputField<T extends FieldValues>({
   label,
   type = "text",
   placeholder,
+  required,
 }: FormInputFieldProps<T>) {
   const id = React.useId()
   const errorId = `${id}-error`
@@ -44,12 +47,20 @@ export function FormInputField<T extends FieldValues>({
       name={name}
       render={({ field, fieldState }) => (
         <Field className="gap-1.5">
-          <FieldLabel htmlFor={id}>{label}</FieldLabel>
+          <FieldLabel htmlFor={id}>
+            {label}
+            {required && (
+              <span aria-hidden="true" className="text-destructive">
+                *
+              </span>
+            )}
+          </FieldLabel>
           <Input
             id={id}
             type={type}
             placeholder={placeholder}
             {...field}
+            aria-required={required || undefined}
             aria-invalid={fieldState.invalid || undefined}
             aria-describedby={fieldState.invalid ? errorId : undefined}
           />

@@ -22,6 +22,8 @@ interface FormSelectFieldProps<T extends FieldValues> {
   name: FieldPath<T>
   label: string
   options: { label: string; value: string }[]
+  /** Visual required marker on the label; validation itself lives in zod. */
+  required?: boolean
 }
 
 /**
@@ -33,6 +35,7 @@ export function FormSelectField<T extends FieldValues>({
   name,
   label,
   options,
+  required,
 }: FormSelectFieldProps<T>) {
   const errorId = React.useId()
 
@@ -42,7 +45,14 @@ export function FormSelectField<T extends FieldValues>({
       name={name}
       render={({ field, fieldState }) => (
         <Field className="gap-1.5">
-          <FieldLabel>{label}</FieldLabel>
+          <FieldLabel>
+            {label}
+            {required && (
+              <span aria-hidden="true" className="text-destructive">
+                *
+              </span>
+            )}
+          </FieldLabel>
           {/* Base UI Select is controlled; bridge it to RHF manually.
               Passing `items` makes SelectValue render the option label
               (e.g. "Active") instead of the raw stored value ("active"). */}
@@ -53,6 +63,7 @@ export function FormSelectField<T extends FieldValues>({
           >
             <SelectTrigger
               className="w-full"
+              aria-required={required || undefined}
               aria-invalid={fieldState.invalid || undefined}
               aria-describedby={fieldState.invalid ? errorId : undefined}
             >
