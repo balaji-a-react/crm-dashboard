@@ -3,6 +3,7 @@
 import * as React from "react"
 import {
   BookmarkIcon,
+  CheckIcon,
   ChevronsUpDownIcon,
   MailIcon,
   PhoneIcon,
@@ -36,6 +37,7 @@ import {
   FILTER_TEMPLATES,
   countActiveFilters,
   isEmptyFilterState,
+  isSameFilterState,
   readSavedFilters,
   writeSavedFilters,
   type CustomerFilterState,
@@ -129,6 +131,10 @@ function AdvancedFiltersPanel({
 
   const activeCount = countActiveFilters(filters)
   const canSave = !isEmptyFilterState(filters) && saveName.trim().length > 0
+  // The template whose state exactly equals the applied filters (if any).
+  const activeTemplateId = FILTER_TEMPLATES.find((t) =>
+    isSameFilterState(t.build(), filters)
+  )?.id
 
   function patch(partial: Partial<CustomerFilterState>) {
     onChange({ ...filters, ...partial })
@@ -170,22 +176,28 @@ function AdvancedFiltersPanel({
         {/* --- Pre-built templates -------------------------------------- */}
         <FilterSection title="Templates">
           <div className="flex flex-col gap-1">
-            {FILTER_TEMPLATES.map((template) => (
-              <Button
-                key={template.id}
-                variant="outline"
-                size="sm"
-                className="h-auto w-full justify-start py-1.5"
-                onClick={() => onChange(template.build())}
-              >
-                <span className="flex flex-col items-start">
-                  <span>{template.label}</span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    {template.description}
+            {FILTER_TEMPLATES.map((template) => {
+              const isActive = template.id === activeTemplateId
+              return (
+                <Button
+                  key={template.id}
+                  variant={isActive ? "secondary" : "outline"}
+                  size="sm"
+                  className="h-auto w-full justify-start py-1.5"
+                  onClick={() => onChange(template.build())}
+                >
+                  <span className="flex flex-col items-start">
+                    <span>{template.label}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {template.description}
+                    </span>
                   </span>
-                </span>
-              </Button>
-            ))}
+                  {isActive && (
+                    <CheckIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                  )}
+                </Button>
+              )
+            })}
           </div>
         </FilterSection>
 

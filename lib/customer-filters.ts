@@ -37,6 +37,26 @@ export function isEmptyFilterState(state: CustomerFilterState): boolean {
 }
 
 /**
+ * Dimension-wise equality between two filter states. Arrays compare as sets
+ * (order-insensitive) and text fields are trimmed, so states that would
+ * produce identical API params are considered equal.
+ */
+export function isSameFilterState(
+  a: CustomerFilterState,
+  b: CustomerFilterState
+): boolean {
+  const setKey = (values: string[]) => [...values].sort().join("\u0000");
+  return (
+    setKey(a.status) === setKey(b.status) &&
+    setKey(a.company) === setKey(b.company) &&
+    a.dateFrom === b.dateFrom &&
+    a.dateTo === b.dateTo &&
+    a.phone.trim() === b.phone.trim() &&
+    a.email.trim() === b.email.trim()
+  );
+}
+
+/**
  * Number of filter DIMENSIONS currently set (max 6). A dimension counts once
  * regardless of how many values it holds -- e.g. 3 companies ticked is still
  * one "Company" filter. This is what the active-filters badge shows.
