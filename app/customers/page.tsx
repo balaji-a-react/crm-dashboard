@@ -10,7 +10,7 @@ import { CustomerCardsSection } from "@/components/customers/customer-card"
 import {
   CustomerTableSection,
 } from "@/components/customers/customer-table"
-import { CustomerDetailSheet } from "@/components/customers/customer-detail-sheet"
+import { CustomerDetailDialog } from "@/components/customers/customer-detail-dialog"
 import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog"
 import {
   AlertDialog,
@@ -262,7 +262,7 @@ export default function CustomersPage() {
         shared hook is lighter and guarantees consistent behavior across both
         views (desktop table + mobile cards).
       */}
-      <CustomerDetailSheet
+      <CustomerDetailDialog
         key={rowActions.selectedCustomerId ?? "none"}
         customerId={rowActions.selectedCustomerId}
         open={rowActions.detailSheetOpen}

@@ -6,25 +6,26 @@ import { PencilIcon, Trash2Icon } from "lucide-react"
 import { CustomerStatusBadge } from "@/components/customers/shared"
 import { Button } from "@/components/ui/button"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useCustomer } from "@/hooks/use-customers"
 
-export interface CustomerDetailSheetProps {
+export interface CustomerDetailDialogProps {
   /** Which customer to load; null renders nothing meaningful but keeps the
-   * sheet mounted for exit animations. */
+   * dialog mounted for exit animations. */
   customerId: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Editing lives in the shared edit dialog (same modal as Add) rendered
-   * once at page level -- this sheet only hands off the id. */
+   * once at page level -- this dialog only hands off the id. */
   onEditRequest: (id: string) => void
-  /** Routed to the SINGLE page-level delete confirmation -- this sheet
+  /** Routed to the SINGLE page-level delete confirmation -- this dialog
    * never owns its own dialog. */
   onDeleteRequest: (id: string) => void
 }
@@ -40,53 +41,34 @@ function DetailRow({ label, value }: { label: string; value?: React.ReactNode })
 }
 
 /**
- * Read-only detail view. Editing is NOT done here anymore -- the Edit button
- * routes to the page-level EditCustomerDialog (same form modal as Add), so
- * both flows stay identical on mobile and desktop.
+ * Read-only detail view as a centred modal (replaces the old side drawer).
+ * Editing is NOT done here -- the Edit button routes to the page-level
+ * EditCustomerDialog (same form modal as Add), and Delete hands off to the
+ * shared page-level confirmation, so both flows stay identical on mobile
+ * and desktop.
  */
-export function CustomerDetailSheet({
+export function CustomerDetailDialog({
   customerId,
   open,
   onOpenChange,
   onEditRequest,
   onDeleteRequest,
-}: CustomerDetailSheetProps) {
+}: CustomerDetailDialogProps) {
   const { data: customer, isLoading } = useCustomer(customerId ?? undefined)
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* side="right" only; width comes from the Sheet's own responsive
-          defaults (full-width drawer on mobile, panel on desktop). */}
-      <SheetContent className="flex flex-col gap-0">
-        <SheetHeader className="pr-12">
-          <SheetTitle>{customer?.name ?? "Customer"}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] flex-col gap-0 sm:max-w-md">
+        <DialogHeader className="gap-1 pr-8 pb-3 border-b">
+          <DialogTitle>{customer?.name ?? "Customer"}</DialogTitle>
+          <DialogDescription>
             {customer?.company || "Customer details"}
-          </SheetDescription>
+          </DialogDescription>
+        </DialogHeader>
 
-          {/* Edit hands off to the shared dialog; Delete hands off to the
-              shared confirmation dialog at page level */}
-          {customer && (
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => onEditRequest(customer.id)}>
-                <PencilIcon />
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => onDeleteRequest(customer.id)}
-              >
-                <Trash2Icon />
-                Delete
-              </Button>
-            </div>
-          )}
-        </SheetHeader>
-
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto pt-2 pr-1">
           {isLoading && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 py-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
@@ -127,7 +109,26 @@ export function CustomerDetailSheet({
             </div>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+
+        {/* Edit hands off to the shared dialog; Delete hands off to the
+            shared confirmation dialog at page level */}
+        {customer && (
+          <DialogFooter>
+            <Button size="sm" onClick={() => onEditRequest(customer.id)}>
+              <PencilIcon />
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onDeleteRequest(customer.id)}
+            >
+              <Trash2Icon />
+              Delete
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
