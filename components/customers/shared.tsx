@@ -10,7 +10,9 @@ const statusVariant = {
 } as const
 
 export function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
-  return <Badge variant={statusVariant[status]}>{status}</Badge>
+  return <Badge variant={statusVariant[status]}>
+    {status.charAt(0).toUpperCase() + status.slice(1)}
+  </Badge>
 }
 
 export function formatLastContactDate(isoDate: string): string {
