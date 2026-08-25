@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { SearchIcon } from "lucide-react"
+import { Loader2Icon, SearchIcon } from "lucide-react"
 
 import { AddCustomerDialog } from "@/components/customers/add-customer-dialog"
 import { AdvancedFiltersSheet } from "@/components/customers/advanced-filters-sheet"
@@ -44,7 +44,27 @@ import type { CustomerListParams } from "@/lib/types"
 
 type SortField = NonNullable<CustomerListParams["sortBy"]>;
 
+/**
+ * useSearchParams() opts this page out of static prerendering -- Next.js
+ * requires the consuming subtree to sit behind a <Suspense> boundary so the
+ * shell can still be prerendered while params resolve on the client.
+ * Without it, `next build` aborts with a CSR-bailout error.
+ */
 export default function CustomersPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center p-8">
+          <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <CustomersPageContent />
+    </React.Suspense>
+  )
+}
+
+function CustomersPageContent() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
