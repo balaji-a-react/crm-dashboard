@@ -68,14 +68,13 @@ export default function CustomersPage() {
     const timer = setTimeout(() => {
       const trimmed = searchInput.trim()
       if (trimmed !== (searchParamsRef.current.get("q") ?? "")) {
-        router.replace(
-          `${pathname}?${new URLSearchParams({
-            ...Object.fromEntries(searchParamsRef.current),
-            ...(trimmed ? { q: trimmed } : {}),
-            page: "1",
-          }).toString()}`,
-          { scroll: false }
-        )
+        // Mutate a copy so an emptied input actually DELETES q -- spreading
+        // the old params here would carry the stale value forward.
+        const next = new URLSearchParams(searchParamsRef.current)
+        if (trimmed) next.set("q", trimmed)
+        else next.delete("q")
+        next.set("page", "1") // a new search always means a new result set
+        router.replace(`${pathname}?${next.toString()}`, { scroll: false })
       }
     }, 300)
     return () => clearTimeout(timer)
