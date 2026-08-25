@@ -1,3 +1,8 @@
+# Project context
+
+Read `CONTEXT.md` first — full stack/architecture/conventions/gotchas summary
+so you don't need to re-explore the codebase.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

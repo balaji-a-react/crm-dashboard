@@ -9,6 +9,7 @@ import {
 import {
   createCustomer,
   deleteCustomer,
+  fetchCompanies,
   fetchCustomer,
   fetchCustomers,
   updateCustomer,
@@ -51,6 +52,17 @@ export function useCustomer(id: string | undefined) {
     queryFn: () => fetchCustomer(id as string),
     // Don't run for undefined ids (e.g. before a detail view has an id).
     enabled: !!id,
+  })
+}
+
+export function useCompanies() {
+  return useQuery({
+    // Own top-level key: companies are metadata, not a customer list, so
+    // ["customers"] invalidations (add/edit/delete) shouldn't refetch them.
+    queryKey: ["companies"],
+    queryFn: fetchCompanies,
+    // Company names change rarely -- keep them warm for the whole session.
+    staleTime: 5 * 60_000,
   })
 }
 

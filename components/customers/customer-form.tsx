@@ -62,7 +62,7 @@ export function CustomerForm({
     <form
       onSubmit={form.handleSubmit(onSubmit)}
       noValidate // let zod messages drive validation UX instead of the browser
-      className="@container grid grid-cols-1 gap-x-3 gap-y-2 @lg:grid-cols-2"
+      className="@container grid gap-x-3 gap-y-2 @lg:grid-cols-2"
     >
       <FormInputField
         control={form.control}

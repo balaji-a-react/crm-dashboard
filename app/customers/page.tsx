@@ -4,6 +4,7 @@ import * as React from "react"
 import { SearchIcon } from "lucide-react"
 
 import { AddCustomerDialog } from "@/components/customers/add-customer-dialog"
+import { AdvancedFiltersSheet } from "@/components/customers/advanced-filters-sheet"
 import { CustomerCardsSection } from "@/components/customers/customer-card"
 import {
   CustomerTableSection,
@@ -31,6 +32,12 @@ import {
 } from "@/components/ui/select"
 import { useCustomerRowActions } from "@/hooks/use-customer-row-actions"
 import { useCustomers } from "@/hooks/use-customers"
+import {
+  EMPTY_FILTER_STATE,
+  countActiveFilters,
+  filterStateToParams,
+  type CustomerFilterState,
+} from "@/lib/customer-filters"
 import type { CustomerListParams } from "@/lib/types"
 
 type SortField = NonNullable<CustomerListParams["sortBy"]>;
@@ -43,6 +50,9 @@ export default function CustomersPage() {
   const [pageSize, setPageSize] = React.useState(10);
   const [sortBy, setSortBy] = React.useState<SortField>("name");
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
+  const [filters, setFilters] = React.useState<CustomerFilterState>(
+    EMPTY_FILTER_STATE
+  );
 
   // Debounce raw input into `search` so we don't hit the API per keystroke.
   React.useEffect(() => {
@@ -54,8 +64,16 @@ export default function CustomersPage() {
   }, [searchInput]);
 
   // --- Server state ---------------------------------------------------------
+  // Filters compose with search: both travel in the same API request and the
+  // API ANDs them together, so narrowing filters never loses the search term.
+  const filterParams = React.useMemo(
+    () => filterStateToParams(filters),
+    [filters]
+  );
+
   const { data, isLoading, isError, error } = useCustomers({
     search,
+    ...filterParams,
     sortBy,
     sortOrder,
     page,
@@ -87,6 +105,12 @@ export default function CustomersPage() {
   const deleteTargetName =
     data?.data.find((c) => c.id === rowActions.deleteTarget)?.name ??
     "this customer";
+
+  /** Commit a filter combination from the advanced panel; reset pagination. */
+  function handleApplyFilters(next: CustomerFilterState) {
+    setFilters(next);
+    setPage(1); // a new filter combination means a new result set
+  }
 
   /** Clicking a sortable header: first click sorts asc, second toggles desc. */
   function handleSort(field: SortField) {
@@ -121,7 +145,7 @@ export default function CustomersPage() {
         <AddCustomerDialog />
       </div>
 
-      {/* Toolbar: search + page size */}
+      {/* Toolbar: search + advanced filters + page size */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-sm">
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -132,6 +156,11 @@ export default function CustomersPage() {
             className="pl-8"
           />
         </div>
+        <AdvancedFiltersSheet
+          applied={filters}
+          onApply={handleApplyFilters}
+          activeCount={countActiveFilters(filters)}
+        />
         <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
           Rows per page
           <Select

@@ -89,6 +89,13 @@ export function fetchCustomer(id: string): Promise<Customer> {
   return request<Customer>(`${API_BASE}/${id}`);
 }
 
+export async function fetchCompanies(): Promise<string[]> {
+  const body = await request<{ companies: string[] }>(
+    `${API_BASE}/companies`
+  );
+  return body.companies;
+}
+
 export function createCustomer(data: NewCustomer): Promise<Customer> {
   return request<Customer>(API_BASE, {
     method: "POST",
