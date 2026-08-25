@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Sheet,
   SheetContent,
@@ -128,7 +129,13 @@ function AdvancedFiltersPanel({
     readSavedFilters()
   )
 
-  const { data: companies = [] } = useCompanies()
+  // While companies load, show skeleton rows -- falling through to the
+  // empty state would claim "No companies found" for a request still
+  // in flight.
+  const {
+    data: companies = [],
+    isLoading: companiesLoading,
+  } = useCompanies()
 
   const activeCount = countActiveFilters(filters)
   const canSave = !isEmptyFilterState(filters) && saveName.trim().length > 0
@@ -254,7 +261,14 @@ function AdvancedFiltersPanel({
             </PopoverTrigger>
             <PopoverContent align="start" className="p-1">
               <div className="max-h-56 overflow-y-auto">
-                {companies.map((company) => (
+                {companiesLoading ? (
+                  <div className="flex flex-col gap-1 p-1">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-7 w-full rounded-md" />
+                    ))}
+                  </div>
+                ) : (
+                  companies.map((company) => (
                   <Label
                     key={company}
                     className="cursor-pointer rounded-md px-2 py-1.5 font-normal hover:bg-muted"
@@ -273,8 +287,9 @@ function AdvancedFiltersPanel({
                     />
                     <span className="truncate">{company}</span>
                   </Label>
-                ))}
-                {companies.length === 0 && (
+                ))
+                )}
+                {!companiesLoading && companies.length === 0 && (
                   <p className="px-2 py-1.5 text-sm text-muted-foreground">
                     No companies found
                   </p>

@@ -97,5 +97,8 @@ export function useCustomerRowActions() {
     requestDelete,
     confirmDelete,
     cancelDelete,
+    /** True between confirmDelete() and the mutation settling -- drives the
+     * spinner/disabled state on the confirmation button. */
+    isDeleting: deleteMutation.isPending,
   }
 }

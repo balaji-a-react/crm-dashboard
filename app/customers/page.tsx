@@ -319,7 +319,13 @@ function CustomersPageContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={rowActions.confirmDelete}>
+            <AlertDialogAction
+              disabled={rowActions.isDeleting}
+              onClick={rowActions.confirmDelete}
+            >
+              {rowActions.isDeleting && (
+                <Loader2Icon className="animate-spin" />
+              )}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
