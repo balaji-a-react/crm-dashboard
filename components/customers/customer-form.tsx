@@ -11,6 +11,7 @@ import { FormSelectField } from "@/components/ui/form-select-field"
 import { FormTextareaField } from "@/components/ui/form-textarea-field"
 import {
   customerFormSchema,
+  limitPhoneNumber,
   type CustomerFormValues,
 } from "@/lib/customer-schema"
 
@@ -87,6 +88,8 @@ export function CustomerForm({
         label="Phone"
         placeholder="+91 9876543210"
         required
+        // E.164: hard-cap at 15 digits while typing, not just on submit.
+        transform={limitPhoneNumber}
       />
 
       <FormInputField

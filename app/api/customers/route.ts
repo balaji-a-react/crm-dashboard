@@ -14,8 +14,10 @@ function isValidEmail(email: string): boolean {
 }
 
 function isValidPhone(phone: string): boolean {
-  // Accepts digits, spaces, parens, +, - and . with a minimum length.
-  return /^[\d\s()+.-]{7,}$/.test(phone);
+  // E.164: separators allowed, but the digit count must be 7–15.
+  if (!/^[\d\s()+.-]*$/.test(phone)) return false;
+  const digits = phone.replace(/\D/g, "");
+  return digits.length >= 7 && digits.length <= 15;
 }
 
 /** Parses a comma-separated query param into a lowercased string array. */

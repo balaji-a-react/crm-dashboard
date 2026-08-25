@@ -43,6 +43,7 @@ import {
   type CustomerFilterState,
   type SavedFilter,
 } from "@/lib/customer-filters"
+import { limitPhoneNumber } from "@/lib/customer-schema"
 import type { CustomerStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -158,7 +159,8 @@ function AdvancedFiltersPanel({
     const next = savedFilters.filter((f) => f.id !== id)
     setSavedFilters(next)
     writeSavedFilters(next)
-    if (target) toast.success(`Filter "${target.name}" deleted`)
+    // Deleting a saved filter is destructive -- red toast.
+    if (target) toast.error(`Filter "${target.name}" deleted`)
   }
 
   return (
@@ -312,7 +314,7 @@ function AdvancedFiltersPanel({
             <PhoneIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={filters.phone}
-              onChange={(e) => patch({ phone: e.target.value })}
+              onChange={(e) => patch({ phone: limitPhoneNumber(e.target.value) })}
               placeholder="Partial match, e.g. 555"
               className="pl-8"
               inputMode="tel"

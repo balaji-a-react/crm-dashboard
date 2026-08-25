@@ -19,6 +19,9 @@ interface FormInputFieldProps<T extends FieldValues> {
   placeholder?: string
   /** Visual required marker on the label; validation itself lives in zod. */
   required?: boolean
+  /** Optional value transformer applied before the value reaches RHF
+   * (e.g. sanitizers that cap length / strip disallowed characters). */
+  transform?: (value: string) => string
 }
 
 /**
@@ -37,6 +40,7 @@ export function FormInputField<T extends FieldValues>({
   type = "text",
   placeholder,
   required,
+  transform,
 }: FormInputFieldProps<T>) {
   const id = React.useId()
   const errorId = `${id}-error`
@@ -60,6 +64,9 @@ export function FormInputField<T extends FieldValues>({
             type={type}
             placeholder={placeholder}
             {...field}
+            onChange={(e) =>
+              field.onChange(transform ? transform(e.target.value) : e.target.value)
+            }
             aria-required={required || undefined}
             aria-invalid={fieldState.invalid || undefined}
             aria-describedby={fieldState.invalid ? errorId : undefined}
