@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { SearchIcon } from "lucide-react"
 
 import { AddCustomerDialog } from "@/components/customers/add-customer-dialog"
@@ -33,9 +34,10 @@ import {
 import { useCustomerRowActions } from "@/hooks/use-customer-row-actions"
 import { useCustomers } from "@/hooks/use-customers"
 import {
-  EMPTY_FILTER_STATE,
   countActiveFilters,
   filterStateToParams,
+  searchParamsToFilters,
+  filtersToParamUpdates,
   type CustomerFilterState,
 } from "@/lib/customer-filters"
 import type { CustomerListParams } from "@/lib/types"
@@ -43,93 +45,116 @@ import type { CustomerListParams } from "@/lib/types"
 type SortField = NonNullable<CustomerListParams["sortBy"]>;
 
 export default function CustomersPage() {
-  // --- Local UI/filter state ------------------------------------------------
-  const [searchInput, setSearchInput] = React.useState(""); // raw keystrokes
-  const [search, setSearch] = React.useState(""); // debounced value -> API
-  const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(10);
-  const [sortBy, setSortBy] = React.useState<SortField>("name");
-  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
-  const [filters, setFilters] = React.useState<CustomerFilterState>(
-    EMPTY_FILTER_STATE
-  );
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
-  // Debounce raw input into `search` so we don't hit the API per keystroke.
+  // Derive all state from URL search params (URL = single source of truth)
+  const { filters, search: urlSearch, sortBy, sortOrder, page, pageSize } =
+    searchParamsToFilters(searchParams)
+
+  // searchInput = local-only raw keystrokes; not in the URL until debounce fires
+  const [searchInput, setSearchInput] = React.useState(urlSearch)
+
+  // Debounce keystrokes → update URL.  Uses a ref so stale closures never read
+  // an old searchParams snapshot.  Synced via useEffect to satisfy the
+  // react-hooks/refs lint rule.
+  const searchParamsRef = React.useRef(searchParams)
+  React.useEffect(() => {
+    searchParamsRef.current = searchParams
+  })
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      setSearch(searchInput.trim());
-      setPage(1); // a new search always means a new result set
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchInput]);
+      const trimmed = searchInput.trim()
+      if (trimmed !== (searchParamsRef.current.get("q") ?? "")) {
+        router.replace(
+          `${pathname}?${new URLSearchParams({
+            ...Object.fromEntries(searchParamsRef.current),
+            ...(trimmed ? { q: trimmed } : {}),
+            page: "1",
+          }).toString()}`,
+          { scroll: false }
+        )
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput, pathname, router])
 
-  // --- Server state ---------------------------------------------------------
-  // Filters compose with search: both travel in the same API request and the
-  // API ANDs them together, so narrowing filters never loses the search term.
+  /** Merge any param changes and reset to page 1. */
+  function updateURL(updates: Record<string, string | null>, keepPage = false) {
+    const next = new URLSearchParams(searchParams)
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === "") next.delete(key)
+      else next.set(key, value)
+    }
+    if (!keepPage) next.delete("page")
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false })
+  }
+
+  // --- Filter / sort / pagination handlers --------------------------------
+
+  function handleFiltersChange(next: CustomerFilterState) {
+    updateURL({ ...filtersToParamUpdates(next) })
+  }
+
+  function handleSort(field: SortField) {
+    const nextSortOrder = field === sortBy && sortOrder === "asc" ? "desc" : "asc"
+    updateURL({ sortBy: field, sortOrder: nextSortOrder })
+  }
+
+  function handlePageChange(newPage: number) {
+    updateURL({ page: String(newPage) }, true)
+  }
+
+  function handlePageSizeChange(newSize: number) {
+    updateURL({ pageSize: String(newSize) })
+  }
+
+  // --- Server state -------------------------------------------------------
   const filterParams = React.useMemo(
     () => filterStateToParams(filters),
     [filters]
-  );
+  )
 
   const { data, isLoading, isError, error } = useCustomers({
-    search,
+    search: urlSearch,
     ...filterParams,
     sortBy,
     sortOrder,
     page,
     pageSize,
-  });
+  })
 
-  // --- Shared row/card actions (ONE instance for both views) ----------------
-  const rowActions = useCustomerRowActions();
+  // --- Shared row/card actions (ONE instance for both views) ---------------
+  const rowActions = useCustomerRowActions()
 
-  // Same three callbacks go to table AND cards so their behavior can never
-  // diverge -- only the trigger elements differ.
   const viewActions = {
     onOpenDetail: rowActions.openDetail,
     onOpenEdit: rowActions.openEdit,
     onDeleteRequest: rowActions.requestDelete,
-  };
+  }
 
   const sectionState = {
     isLoading,
     isError,
     error: isError ? (error as Error) : null,
     customers: data?.data,
-  };
+  }
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
 
-  // Name for the delete confirmation copy; falls back if the record isn't
-  // on the current page (possible when deleting from a detail opened earlier).
   const deleteTargetName =
     data?.data.find((c) => c.id === rowActions.deleteTarget)?.name ??
-    "this customer";
-
-  /** Commit a filter combination from the advanced panel; reset pagination. */
-  function handleApplyFilters(next: CustomerFilterState) {
-    setFilters(next);
-    setPage(1); // a new filter combination means a new result set
-  }
-
-  /** Clicking a sortable header: first click sorts asc, second toggles desc. */
-  function handleSort(field: SortField) {
-    if (field === sortBy) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-    setPage(1);
-  }
+    "this customer"
 
   /** Sliding window of max 5 page numbers centred on the current page. */
   function getPageNumbers(): number[] {
-    const window = 5;
-    let start = Math.max(1, page - Math.floor(window / 2));
-    const end = Math.min(totalPages, start + window - 1);
-    start = Math.max(1, end - window + 1);
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    const window = 5
+    let start = Math.max(1, page - Math.floor(window / 2))
+    const end = Math.min(totalPages, start + window - 1)
+    start = Math.max(1, end - window + 1)
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
   }
 
   return (
@@ -141,7 +166,6 @@ export default function CustomersPage() {
             Manage your customer relationships and contact history.
           </p>
         </div>
-        {/* Visible in both layouts (table & cards) */}
         <AddCustomerDialog />
       </div>
 
@@ -157,18 +181,15 @@ export default function CustomersPage() {
           />
         </div>
         <AdvancedFiltersSheet
-          applied={filters}
-          onApply={handleApplyFilters}
+          filters={filters}
+          onChange={handleFiltersChange}
           activeCount={countActiveFilters(filters)}
         />
         <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
           Rows per page
           <Select
             value={String(pageSize)}
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              setPage(1);
-            }}
+            onValueChange={(value) => handlePageSizeChange(Number(value))}
           >
             <SelectTrigger className="w-16">
               <SelectValue />
@@ -206,7 +227,7 @@ export default function CustomersPage() {
             variant="outline"
             size="sm"
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => handlePageChange(page - 1)}
           >
             Previous
           </Button>
@@ -215,7 +236,7 @@ export default function CustomersPage() {
               key={n}
               variant={n === page ? "default" : "outline"}
               size="sm"
-              onClick={() => setPage(n)}
+              onClick={() => handlePageChange(n)}
             >
               {n}
             </Button>
@@ -224,7 +245,7 @@ export default function CustomersPage() {
             variant="outline"
             size="sm"
             disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => handlePageChange(page + 1)}
           >
             Next
           </Button>
@@ -249,15 +270,12 @@ export default function CustomersPage() {
           if (!next) rowActions.closeSheet()
         }}
         onEditRequest={(id) => {
-          // Edit uses the shared dialog (same modal as Add), so the sheet
-          // steps aside to avoid stacking two overlays.
           rowActions.closeSheet()
           rowActions.openEdit(id)
         }}
         onDeleteRequest={rowActions.requestDelete}
       />
 
-      {/* Shared edit modal: same Dialog + CustomerForm as Add, prefilled */}
       <EditCustomerDialog
         customerId={rowActions.editCustomerId}
         open={rowActions.editDialogOpen}
@@ -266,7 +284,6 @@ export default function CustomersPage() {
         }}
       />
 
-      {/* Single delete confirmation for every trigger in either view */}
       <AlertDialog
         open={!!rowActions.deleteTarget}
         onOpenChange={(open) => {

@@ -76,6 +76,69 @@ export function filterStateToParams(
 }
 
 // ---------------------------------------------------------------------------
+// URL search-param helpers
+//
+// Filters + sort + pagination are stored in the URL as search params so they
+// survive navigation and refresh.  The helpers below convert between the
+// CustomerFilterState shape the panel uses and flat URLSearchParams.
+// ---------------------------------------------------------------------------
+
+const VALID_SORT_FIELDS = new Set<string>(["name", "email", "lastContactDate"]);
+
+/**
+ * Parse URL search params into the full filter/sort/page state the page needs.
+ * Invalid or missing values silently fall back to defaults.
+ */
+export function searchParamsToFilters(sp: URLSearchParams) {
+  const status = (sp.get("status") ?? "")
+    .split(",")
+    .filter(Boolean) as CustomerStatus[];
+  const company = sp.get("company")?.split(",").filter(Boolean) ?? [];
+
+  const sortByRaw = sp.get("sortBy");
+  const sortBy: NonNullable<CustomerListParams["sortBy"]> =
+    sortByRaw && VALID_SORT_FIELDS.has(sortByRaw)
+      ? (sortByRaw as NonNullable<CustomerListParams["sortBy"]>)
+      : "name";
+  const sortOrder: "asc" | "desc" =
+    sp.get("sortOrder") === "desc" ? "desc" : "asc";
+
+  return {
+    filters: {
+      status,
+      company,
+      dateFrom: sp.get("dateFrom") ?? "",
+      dateTo: sp.get("dateTo") ?? "",
+      phone: sp.get("phone") ?? "",
+      email: sp.get("email") ?? "",
+    } as CustomerFilterState,
+    search: sp.get("q") ?? "",
+    sortBy,
+    sortOrder,
+    page: Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1),
+    pageSize: Math.max(1, parseInt(sp.get("pageSize") ?? "10", 10) || 10),
+  };
+}
+
+/**
+ * Convert a CustomerFilterState into a flat Record<string, string | null>
+ * suitable for merging into URL search params.  Empty arrays / strings
+ * produce `null` (delete) so they don't clutter the URL.
+ */
+export function filtersToParamUpdates(
+  state: CustomerFilterState
+): Record<string, string | null> {
+  return {
+    status: state.status.length > 0 ? state.status.join(",") : null,
+    company: state.company.length > 0 ? state.company.join(",") : null,
+    dateFrom: state.dateFrom || null,
+    dateTo: state.dateTo || null,
+    phone: state.phone.trim() || null,
+    email: state.email.trim() || null,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Pre-built templates
 //
 // `build` is a function (not a static object) so relative dates like

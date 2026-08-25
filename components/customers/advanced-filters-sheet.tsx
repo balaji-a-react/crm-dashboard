@@ -26,7 +26,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -73,23 +72,20 @@ function FilterSection({
 /**
  * Advanced Filters Panel (sidebar sheet).
  *
- * The sheet edits a DRAFT copy of the applied filters; nothing reaches the
- * customer list until "Apply filters" commits it (or "Clear all" resets
- * everything at once). This lets users experiment with combinations -- and
- * save them -- without firing a request on every keystroke/toggle.
+ * Fully controlled: the parent owns the filter state via `filters` + `onChange`.
+ * Every toggle / input calls `onChange` immediately (no draft, no Apply button)
+ * so the URL is always up to date.
  *
- * The panel only mounts while the sheet is open, so its initial state
- * (draft = applied, saved filters = localStorage) is computed once per
- * opening via state initializers -- closing without applying is a safe
- * "cancel", and no sync effects are needed.
+ * The panel only mounts while the sheet is open, so saved filters are loaded
+ * fresh each time from localStorage via a state initializer.
  */
 export function AdvancedFiltersSheet({
-  applied,
-  onApply,
+  filters,
+  onChange,
   activeCount,
 }: {
-  applied: CustomerFilterState
-  onApply: (next: CustomerFilterState) => void
+  filters: CustomerFilterState
+  onChange: (next: CustomerFilterState) => void
   activeCount: number
 }) {
   const [open, setOpen] = React.useState(false)
@@ -110,14 +106,7 @@ export function AdvancedFiltersSheet({
 
       {open && (
         <SheetContent>
-          <AdvancedFiltersPanel
-            applied={applied}
-            onApply={(next) => {
-              onApply(next)
-              setOpen(false)
-            }}
-            onClearAll={() => onApply(EMPTY_FILTER_STATE)}
-          />
+          <AdvancedFiltersPanel filters={filters} onChange={onChange} />
         </SheetContent>
       )}
     </Sheet>
@@ -125,15 +114,12 @@ export function AdvancedFiltersSheet({
 }
 
 function AdvancedFiltersPanel({
-  applied,
-  onApply,
-  onClearAll,
+  filters,
+  onChange,
 }: {
-  applied: CustomerFilterState
-  onApply: (next: CustomerFilterState) => void
-  onClearAll: () => void
+  filters: CustomerFilterState
+  onChange: (next: CustomerFilterState) => void
 }) {
-  const [draft, setDraft] = React.useState<CustomerFilterState>(applied)
   const [saveName, setSaveName] = React.useState("")
   const [savedFilters, setSavedFilters] = React.useState<SavedFilter[]>(() =>
     readSavedFilters()
@@ -141,34 +127,18 @@ function AdvancedFiltersPanel({
 
   const { data: companies = [] } = useCompanies()
 
-  const draftCount = countActiveFilters(draft)
+  const activeCount = countActiveFilters(filters)
+  const canSave = !isEmptyFilterState(filters) && saveName.trim().length > 0
 
-  // Trim text filters for both comparison and commit so trailing spaces
-  // never produce a phantom "dirty" state or a junk API param.
-  const normalizedDraft: CustomerFilterState = {
-    ...draft,
-    phone: draft.phone.trim(),
-    email: draft.email.trim(),
-  }
-  const isDirty = JSON.stringify(normalizedDraft) !== JSON.stringify(applied)
-  const canSave = !isEmptyFilterState(draft) && saveName.trim().length > 0
-
-  function applyDraft() {
-    onApply(normalizedDraft)
-  }
-
-  function clearAll() {
-    setDraft(EMPTY_FILTER_STATE)
-    // Commit immediately: "Clear all" is an explicit instruction to reset
-    // the list now, not a draft edit the user should have to confirm.
-    onClearAll()
+  function patch(partial: Partial<CustomerFilterState>) {
+    onChange({ ...filters, ...partial })
   }
 
   function saveCurrent() {
     const entry: SavedFilter = {
       id: crypto.randomUUID(),
       name: saveName.trim(),
-      state: normalizedDraft,
+      state: { ...filters },
     }
     const next = [...savedFilters, entry]
     setSavedFilters(next)
@@ -190,8 +160,8 @@ function AdvancedFiltersPanel({
       <SheetHeader>
         <SheetTitle>Advanced filters</SheetTitle>
         <SheetDescription>
-          {draftCount > 0
-            ? `${draftCount} of 6 filters selected`
+          {activeCount > 0
+            ? `${activeCount} of 6 filters selected`
             : "No filters selected yet"}
         </SheetDescription>
       </SheetHeader>
@@ -206,7 +176,7 @@ function AdvancedFiltersPanel({
                 variant="outline"
                 size="sm"
                 className="h-auto w-full justify-start py-1.5"
-                onClick={() => setDraft(template.build())}
+                onClick={() => onChange(template.build())}
               >
                 <span className="flex flex-col items-start">
                   <span>{template.label}</span>
@@ -230,16 +200,11 @@ function AdvancedFiltersPanel({
                 className="-mx-1 cursor-pointer rounded-md px-1 py-0.5 font-normal hover:bg-muted/50"
               >
                 <Checkbox
-                  checked={draft.status.includes(value)}
+                  checked={filters.status.includes(value)}
                   onCheckedChange={(checked) =>
-                    setDraft((current) => ({
-                      ...current,
-                      status: toggleValue(
-                        current.status,
-                        value,
-                        checked === true
-                      ),
-                    }))
+                    patch({
+                      status: toggleValue(filters.status, value, checked === true),
+                    })
                   }
                 />
                 {label}
@@ -262,14 +227,14 @@ function AdvancedFiltersPanel({
               <span
                 className={cn(
                   "truncate",
-                  draft.company.length === 0 && "text-muted-foreground"
+                  filters.company.length === 0 && "text-muted-foreground"
                 )}
               >
-                {draft.company.length === 0
+                {filters.company.length === 0
                   ? "Any company"
-                  : draft.company.length === 1
-                    ? draft.company[0]
-                    : `${draft.company.length} companies selected`}
+                  : filters.company.length === 1
+                    ? filters.company[0]
+                    : `${filters.company.length} companies selected`}
               </span>
               <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
             </PopoverTrigger>
@@ -281,16 +246,15 @@ function AdvancedFiltersPanel({
                     className="cursor-pointer rounded-md px-2 py-1.5 font-normal hover:bg-muted"
                   >
                     <Checkbox
-                      checked={draft.company.includes(company)}
+                      checked={filters.company.includes(company)}
                       onCheckedChange={(checked) =>
-                        setDraft((current) => ({
-                          ...current,
+                        patch({
                           company: toggleValue(
-                            current.company,
+                            filters.company,
                             company,
                             checked === true
                           ),
-                        }))
+                        })
                       }
                     />
                     <span className="truncate">{company}</span>
@@ -313,28 +277,18 @@ function AdvancedFiltersPanel({
               <span className="text-xs text-muted-foreground">From</span>
               <Input
                 type="date"
-                value={draft.dateFrom}
-                max={draft.dateTo || undefined}
-                onChange={(e) =>
-                  setDraft((current) => ({
-                    ...current,
-                    dateFrom: e.target.value,
-                  }))
-                }
+                value={filters.dateFrom}
+                max={filters.dateTo || undefined}
+                onChange={(e) => patch({ dateFrom: e.target.value })}
               />
             </Label>
             <Label className="flex-col items-start gap-1.5 font-normal">
               <span className="text-xs text-muted-foreground">To</span>
               <Input
                 type="date"
-                value={draft.dateTo}
-                min={draft.dateFrom || undefined}
-                onChange={(e) =>
-                  setDraft((current) => ({
-                    ...current,
-                    dateTo: e.target.value,
-                  }))
-                }
+                value={filters.dateTo}
+                min={filters.dateFrom || undefined}
+                onChange={(e) => patch({ dateTo: e.target.value })}
               />
             </Label>
           </div>
@@ -345,10 +299,8 @@ function AdvancedFiltersPanel({
           <div className="relative">
             <PhoneIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={draft.phone}
-              onChange={(e) =>
-                setDraft((current) => ({ ...current, phone: e.target.value }))
-              }
+              value={filters.phone}
+              onChange={(e) => patch({ phone: e.target.value })}
               placeholder="Partial match, e.g. 555"
               className="pl-8"
               inputMode="tel"
@@ -361,10 +313,8 @@ function AdvancedFiltersPanel({
           <div className="relative">
             <MailIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={draft.email}
-              onChange={(e) =>
-                setDraft((current) => ({ ...current, email: e.target.value }))
-              }
+              value={filters.email}
+              onChange={(e) => patch({ email: e.target.value })}
               placeholder="Partial match, e.g. acme.io"
               className="pl-8"
               inputMode="email"
@@ -385,7 +335,7 @@ function AdvancedFiltersPanel({
                     size="sm"
                     className="h-8 min-w-0 flex-1 justify-start font-normal"
                     title={`Apply "${saved.name}"`}
-                    onClick={() => setDraft(saved.state)}
+                    onClick={() => onChange(saved.state)}
                   >
                     <BookmarkIcon className="shrink-0 text-muted-foreground" />
                     <span className="truncate">{saved.name}</span>
@@ -430,19 +380,17 @@ function AdvancedFiltersPanel({
         </FilterSection>
       </div>
 
-      <SheetFooter className="flex-row">
+      {/* Footer: only Clear All (no Apply -- changes are real-time) */}
+      <div className="flex border-t px-6 py-3">
         <Button
           variant="outline"
-          className="flex-1"
-          disabled={isEmptyFilterState(draft)}
-          onClick={clearAll}
+          className="w-full"
+          disabled={isEmptyFilterState(filters)}
+          onClick={() => onChange(EMPTY_FILTER_STATE)}
         >
           Clear all
         </Button>
-        <Button className="flex-1" disabled={!isDirty} onClick={applyDraft}>
-          Apply filters
-        </Button>
-      </SheetFooter>
+      </div>
     </>
   )
 }
