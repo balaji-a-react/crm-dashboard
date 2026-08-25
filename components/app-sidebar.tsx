@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { NavMain } from "@/components/nav-main"
+import { AppLogo } from "@/components/app-logo"
 import {
   Sidebar,
   SidebarContent,
@@ -14,7 +15,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import {
-  GalleryVerticalEndIcon,
   LayoutDashboardIcon,
   UserIcon,
   UsersIcon,
@@ -45,9 +45,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <GalleryVerticalEndIcon className="size-4" />
-              </div>
+              {/* The logo carries its own dark tile; the ring keeps it
+                  visible against the sidebar in dark mode. size-8! overrides
+                  the menu button's blanket [&_svg]:size-4 rule. */}
+              <AppLogo className="size-8! shrink-0 rounded-lg ring-1 ring-sidebar-border/60" />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">CRM Dashboard</span>
               </div>
