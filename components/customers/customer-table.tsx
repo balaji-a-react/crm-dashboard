@@ -96,6 +96,10 @@ const COLUMNS: ColumnDef[] = [
 
 const DEFAULT_COLUMN_ORDER = COLUMNS.map((c) => c.id);
 
+/** Never-firing subscription: lets useSyncExternalStore act as a pure
+ * server=false / client=true mount flag (lint-safe, no setState in effect). */
+const subscribeNoop = () => () => {};
+
 // ---------------------------------------------------------------------------
 // Column-order persistence (localStorage)
 //
@@ -243,6 +247,7 @@ export function CustomerTableSection({
   return (
     <div className="rounded-lg border">
       <DndContext
+        id="customers-table-columns"
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
@@ -370,6 +375,17 @@ function SortableHeaderCell({
     isDragging,
   } = useSortable({ id: column.id });
 
+  // dnd-kit derives ARIA ids (e.g. aria-describedby="DndDescribedBy-N") from
+  // a module-level counter that advances across SSR requests but resets per
+  // client bundle -- the values can never match during hydration. So the
+  // drag handle renders INERT on the server + hydration pass (identical
+  // visuals, no dnd attributes) and becomes interactive right after mount.
+  const isMounted = React.useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+
   return (
     <TableHead
       ref={setNodeRef}
@@ -401,17 +417,27 @@ function SortableHeaderCell({
         ) : (
           column.label
         )}
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label={`Reorder ${column.label} column`}
-          title="Drag to reorder"
-          onClick={(e) => e.stopPropagation()}
-          className="ml-0.5 cursor-grab touch-none rounded p-0.5 text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground active:cursor-grabbing"
-        >
-          <GripVerticalIcon className="size-3.5" />
-        </button>
+        {isMounted ? (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label={`Reorder ${column.label} column`}
+            title="Drag to reorder"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-0.5 cursor-grab touch-none rounded p-0.5 text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground active:cursor-grabbing"
+          >
+            <GripVerticalIcon className="size-3.5" />
+          </button>
+        ) : (
+          // Same footprint, non-interactive: keeps SSR HTML deterministic.
+          <span
+            aria-hidden="true"
+            className="ml-0.5 rounded p-0.5 text-muted-foreground/40"
+          >
+            <GripVerticalIcon className="size-3.5" />
+          </span>
+        )}
       </span>
     </TableHead>
   );
