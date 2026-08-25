@@ -35,7 +35,7 @@ function DetailRow({ label, value }: { label: string; value?: React.ReactNode })
   return (
     <div className="flex flex-col gap-0.5 border-b py-2 last:border-b-0">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm break-words">{value ?? "—"}</span>
+      <span className="text-sm wrap-break-word">{value ?? "—"}</span>
     </div>
   )
 }
