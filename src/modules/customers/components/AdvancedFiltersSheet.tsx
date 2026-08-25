@@ -181,7 +181,9 @@ function AdvancedFiltersPanel({
         </SheetDescription>
       </SheetHeader>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
+      {/* min-w-0 lets this flex child shrink to the sheet width instead of
+          being floored at its content's min-content (long inputs/dates). */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
         {/* --- Pre-built templates -------------------------------------- */}
         <FilterSection title="Templates">
           <div className="flex flex-col gap-1">
@@ -302,7 +304,7 @@ function AdvancedFiltersPanel({
         {/* --- Last contact date range ----------------------------------- */}
         <FilterSection title="Last contact date">
           <div className="grid grid-cols-2 gap-2">
-            <Label className="flex-col items-start gap-1.5 font-normal">
+            <Label className="min-w-0 flex-col items-start gap-1.5 font-normal">
               <span className="text-xs text-muted-foreground">From</span>
               <Input
                 type="date"
@@ -311,7 +313,7 @@ function AdvancedFiltersPanel({
                 onChange={(e) => patch({ dateFrom: e.target.value })}
               />
             </Label>
-            <Label className="flex-col items-start gap-1.5 font-normal">
+            <Label className="min-w-0 flex-col items-start gap-1.5 font-normal">
               <span className="text-xs text-muted-foreground">To</span>
               <Input
                 type="date"
@@ -396,7 +398,7 @@ function AdvancedFiltersPanel({
                 if (e.key === "Enter" && canSave) saveCurrent()
               }}
               placeholder='Name this filter, e.g. "Q3 follow-ups"'
-              className="flex-1"
+              className="min-w-0 flex-1"
             />
             <Button
               variant="secondary"

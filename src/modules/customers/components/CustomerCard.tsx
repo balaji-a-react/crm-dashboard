@@ -118,7 +118,7 @@ export function CustomerCardsSection({
             items={SORT_OPTIONS}
             onValueChange={(value) => sort.onSort(value as CustomerSortState["field"])}
           >
-            <SelectTrigger className="flex-1" aria-label="Sort customers by">
+            <SelectTrigger className="min-w-0 flex-1" aria-label="Sort customers by">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

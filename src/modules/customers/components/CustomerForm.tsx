@@ -14,6 +14,7 @@ import {
   limitPhoneNumber,
   type CustomerFormValues,
 } from "@/modules/customers/types/customer-schema"
+import { cn } from "@/utils/cn"
 
 export interface CustomerFormProps {
   /** Pre-fill fields (used by the Edit flow); Add passes nothing. */
@@ -23,6 +24,8 @@ export interface CustomerFormProps {
   onCancel?: () => void
   isSubmitting: boolean
   submitLabel: string
+  /** Forwarded to the <form>, e.g. spacing tweaks inside the host dialog. */
+  className?: string
 }
 
 /**
@@ -41,6 +44,7 @@ export function CustomerForm({
   onCancel,
   isSubmitting,
   submitLabel,
+  className,
 }: CustomerFormProps) {
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
@@ -57,78 +61,82 @@ export function CustomerForm({
   })
 
   return (
-    // Container-query grid: two columns when the HOST has room (the wide
-    // Add/Edit dialog), single column in narrow hosts -- because
-    // the breakpoint tracks the form's container, not the viewport.
+    // Flex column constrained by the host dialog's max-height: fields scroll,
+    // footer stays pinned. Container query on the form still drives the
+    // two-column field grid (the breakpoint tracks the form's container, not
+    // the viewport).
     <form
       onSubmit={form.handleSubmit(onSubmit)}
       noValidate // let zod messages drive validation UX instead of the browser
-      className="@container grid gap-x-3 gap-y-2 @lg:grid-cols-2"
+      className={cn("@container flex min-h-0 flex-1 flex-col", className)}
     >
-      <FormInputField
-        control={form.control}
-        name="name"
-        label="Name"
-        placeholder="Jane Doe"
-        required
-      />
+      <div className="grid min-h-0 flex-1 gap-x-3 gap-y-2 overflow-y-auto @lg:grid-cols-2">
+        <FormInputField
+          control={form.control}
+          name="name"
+          label="Name"
+          placeholder="Jane Doe"
+          required
+        />
 
-      <FormInputField
-        control={form.control}
-        name="email"
-        label="Email"
-        type="email"
-        placeholder="jane@company.com"
-        required
-      />
+        <FormInputField
+          control={form.control}
+          name="email"
+          label="Email"
+          type="email"
+          placeholder="jane@company.com"
+          required
+        />
 
-      <FormInputField
-        control={form.control}
-        name="phone"
-        label="Phone"
-        placeholder="+91 9876543210"
-        required
-        // E.164: hard-cap at 15 digits while typing, not just on submit.
-        transform={limitPhoneNumber}
-      />
+        <FormInputField
+          control={form.control}
+          name="phone"
+          label="Phone"
+          placeholder="+91 9876543210"
+          required
+          // E.164: hard-cap at 15 digits while typing, not just on submit.
+          transform={limitPhoneNumber}
+        />
 
-      <FormInputField
-        control={form.control}
-        name="company"
-        label="Company"
-        placeholder="Acme Corp"
-      />
+        <FormInputField
+          control={form.control}
+          name="company"
+          label="Company"
+          placeholder="Acme Corp"
+        />
 
-      <FormSelectField
-        control={form.control}
-        name="status"
-        label="Status"
-        options={[
-          { label: "Active", value: "active" },
-          { label: "Inactive", value: "inactive" },
-        ]}
-      />
+        <FormSelectField
+          control={form.control}
+          name="status"
+          label="Status"
+          options={[
+            { label: "Active", value: "active" },
+            { label: "Inactive", value: "inactive" },
+          ]}
+        />
 
-      <FormInputField
-        control={form.control}
-        name="lastContactDate"
-        label="Last contact date"
-        type="date"
-        required
-      />
+        <FormInputField
+          control={form.control}
+          name="lastContactDate"
+          label="Last contact date"
+          type="date"
+          required
+        />
 
-      <FormTextareaField
-        control={form.control}
-        name="notes"
-        label="Notes"
-        rows={3}
-        placeholder="Anything worth remembering…"
-        className="@lg:col-span-2"
-      />
+        <FormTextareaField
+          control={form.control}
+          name="notes"
+          label="Notes"
+          rows={3}
+          placeholder="Anything worth remembering…"
+          className="@lg:col-span-2"
+        />
+      </div>
 
       {/* Dialog convention: actions right-aligned in a footer, not a
-          full-width button. Lives inside <form> so submit still works. */}
-      <DialogFooter className="@lg:col-span-2">
+          full-width button. Lives inside <form> so submit still works, but
+          outside the scroll area so it stays reachable on short viewports. */}
+      <DialogFooter className="shrink-0">
         {onCancel && (
           <Button
             type="button"

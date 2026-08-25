@@ -240,12 +240,14 @@ function CustomersPageContent() {
         />
       </div>
 
-      {/* Pagination: Previous / numbered pages / Next */}
-      <div className="flex items-center justify-between">
+      {/* Pagination: Previous / numbered pages / Next.
+          Stacks vertically on mobile (the button row alone exceeds a phone
+          viewport) and goes side-by-side from sm up. */}
+      <div className="flex flex-col-reverse items-center gap-3 sm:flex-row sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {data ? `${data.total} customer${data.total === 1 ? "" : "s"}` : ""}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-center gap-1">
           <Button
             variant="outline"
             size="sm"

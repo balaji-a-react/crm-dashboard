@@ -12,7 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog"
 import { Skeleton } from "@/components/ui/Skeleton"
-import { useCustomer, useUpdateCustomer } from "@/modules/customers/hooks/use-customers"
+import {
+  useCustomer,
+  useUpdateCustomer,
+} from "@/modules/customers/hooks/use-customers"
 
 export interface EditCustomerDialogProps {
   /** Customer to load; null keeps the dialog closed/mounted for animations. */
@@ -43,9 +46,11 @@ export function EditCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Same width as Add so the form gets two columns on desktop */}
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      {/* Same width as Add so the form gets two columns on desktop.
+          Height-capped with an internal scroll area (like the detail
+          dialog) so short viewports can always reach every field. */}
+      <DialogContent className="flex max-h-[85dvh] flex-col gap-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 gap-1 border-b pr-8 pb-3">
           <DialogTitle>Edit customer</DialogTitle>
           <DialogDescription>
             Update the fields below and save.
@@ -61,7 +66,7 @@ export function EditCustomerDialog({
         )}
 
         {!isLoading && !customer && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             Customer not found.
           </p>
         )}
@@ -70,6 +75,7 @@ export function EditCustomerDialog({
           // key remounts the form fresh on every open/customer change
           <CustomerForm
             key={`${customerId}-${open}`}
+            className="pt-3"
             defaultValues={{
               name: customer.name,
               email: customer.email,

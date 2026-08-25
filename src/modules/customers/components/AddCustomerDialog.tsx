@@ -31,9 +31,11 @@ export function AddCustomerDialog({ ...props }: React.ComponentProps<"div">) {
           <PlusIcon />
           Add Customer
         </DialogTrigger>
-        {/* Wider than the default sm:max-w-sm so the form can use two columns */}
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
+        {/* Wider than the default sm:max-w-sm so the form can use two columns.
+            Height-capped with an internal scroll area (like the detail
+            dialog) so short viewports can always reach every field. */}
+        <DialogContent className="flex max-h-[85dvh] flex-col gap-0 sm:max-w-2xl">
+          <DialogHeader className="shrink-0 gap-1 border-b pr-8 pb-3">
             <DialogTitle>Add customer</DialogTitle>
             <DialogDescription>
               Create a new customer record. Fields marked required must be
@@ -44,6 +46,7 @@ export function AddCustomerDialog({ ...props }: React.ComponentProps<"div">) {
           {/* key remounts the form fresh every time the dialog opens */}
           <CustomerForm
             key={String(open)}
+            className="pt-3"
             submitLabel="Add Customer"
             isSubmitting={isPending}
             onCancel={() => setOpen(false)}
