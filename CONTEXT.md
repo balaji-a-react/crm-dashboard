@@ -4,12 +4,6 @@
 > so feature work can start immediately without re-exploring the codebase.
 > Last updated: 2026-08-25 (after URL-state model, column reorder, logo,
 > toast theming, loading-state pass).
->
-> WORKING TREE NOTE: toast-color theming (globals.css/sonner.tsx/
-> use-customer-row-actions.ts) and the loading-states pass (delete pending
-> spinner, companies skeletons) are verified but deliberately UNCOMMITTED;
-> app/customers/page.tsx also carries an unrelated manual edit (page-size
-> default option 5→10). Don't sweep these into unrelated commits.
 
 ## 1. What this is
 
